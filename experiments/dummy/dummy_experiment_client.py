@@ -63,8 +63,7 @@ def main():
     reactor.connectTCP(environ['SYNC_HOST'], int(environ['SYNC_PORT']), factory)
     
     #Add scnenario file - seyed
-    DummyExperimentClient.scenario_file = 'dummy.scenario'
-    
+
     reactor.exitCode = 0
     reactor.run()
     print >> stderr, "post-main STDERR"
