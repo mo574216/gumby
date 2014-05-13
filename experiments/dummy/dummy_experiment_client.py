@@ -57,7 +57,10 @@ def main():
     factory = ExperimentClientFactory({"random_key": "random value"}, DummyExperimentClient)
     msg("Connecting to: %s:%s" % (environ['SYNC_HOST'], int(environ['SYNC_PORT'])))
     reactor.connectTCP(environ['SYNC_HOST'], int(environ['SYNC_PORT']), factory)
-
+    
+    #Add scnenario file - seyed
+    DummyExperimentClient.scenario_file = 'dummy.scenario'
+    
     reactor.exitCode = 0
     reactor.run()
     print >> stderr, "post-main STDERR"
