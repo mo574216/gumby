@@ -49,6 +49,7 @@ from gumby.scenario import ScenarioRunner
 class DummyExperimentClient(ExperimentClient):
     def startExperiment(self):
         scenario_file_path = './'
+        self.scenario_file = 'dummy.scenario'
         self.scenario_runner = ScenarioRunner(scenario_file_path)
         msg("Starting dummy experiment (exiting in a couple of seconds)")
         msg("in-experiment DEFAULT_LEVEL")
