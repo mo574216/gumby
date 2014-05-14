@@ -4,11 +4,11 @@
 # Filename: dispersyclient.py
 # Description:
 # Author: Elric Milon
-# Maintainer:
+# Maintainer:Seyedakbar Mostafavi
 # Created: Wed Sep 18 17:29:33 2013 (+0200)
-
+# Changed: May 14 2014
 # Commentary:
-#
+# I plan to customize this file to run tribler with my config file
 #
 #
 #
@@ -154,32 +154,6 @@ class DispersyExperimentScriptClient(ExperimentClient):
 
     def registerCallbacks(self):
         pass
-
-    def initializeCrypto(self):
-        from Tribler.dispersy.crypto import ECCrypto, NoCrypto
-
-        if environ.get('TRACKER_CRYPTO', 'ECCrypto') == 'ECCrypto':
-            msg('Turning on ECCrypto')
-            return ECCrypto()
-        msg('Turning off Crypto')
-        return NoCrypto()
-
-    @property
-    def my_member_key_curve(self):
-        # low (NID_sect233k1) isn't actually that low, switching to 160bits as this is comparable to rsa 1024
-        # http://www.nsa.gov/business/programs/elliptic_curve.shtml
-        # speed difference when signing/verifying 100 items
-        # NID_sect233k1 signing took 0.171 verify took 0.35 totals 0.521
-        # NID_secp160k1 signing took 0.04 verify took 0.04 totals 0.08
-        return u"NID_secp160k1"
-
-    def generateMyMember(self):
-        ec = self._crypto.generate_key(self.my_member_key_curve)
-        self.my_member_key = self._crypto.key_to_bin(ec.pub())
-        self.my_member_private_key = self._crypto.key_to_bin(ec)
-    #
-    # Actions
-    #
 
     def echo(self, *argv):
         msg("%s ECHO" % self.my_id, ' '.join(argv))
@@ -351,25 +325,7 @@ class DispersyExperimentScriptClient(ExperimentClient):
     #
 
 
-    def get_private_keypair_by_id(self, peer_id):
-        if str(peer_id) in self.all_vars:
-            key = self.all_vars[str(peer_id)]['private_keypair']
-            if isinstance(key, basestring):
-                key = self.all_vars[str(peer_id)]['private_keypair'] = self._crypto.key_from_private_bin(base64.decodestring(key))
-            return key
-
-    def get_private_keypair(self, ip, port):
-        port = int(port)
-        for peer_dict in self.all_vars.itervalues():
-            if peer_dict['host'] == ip and int(peer_dict['port']) == port:
-                key = peer_dict['private_keypair']
-                if isinstance(key, basestring):
-                    key = peer_dict['private_keypair'] = self._crypto.key_from_private_bin(base64.decodestring(key))
-                return key
-
-        err("Could not get_private_keypair for", ip, port)
-
-    def str2bool(self, v):
+   def str2bool(self, v):
         return v.lower() in ("yes", "true", "t", "1")
 
     def str2tuple(self, v):
@@ -541,8 +497,3 @@ if __name__ == '__main__':
     import sys
     dc = DispersyExperimentScriptClient({})
     dc._stats_file = sys.stderr
-
-    prev_dict = json.loads('{"created_count": 2, "total_candidates_discovered": 12, "total_down": 107164, "success_count": 1, "total_up": 404, "is_online": true, "communities": {"bd152ce23576a515085268c671351ef37e796856" : {"global_time": 4, "sync_bloom_reuse": 0, "sync_bloom_skip": 0, "nr_stumbled_candidates": 0, "sync_bloom_new": 0, "sync_bloom_send": 0, "classification": "PoliSocialCommunity", "cid": "bd152ce23576a515085268c671351ef37e796856", "nr_candidates": 0}}, "total_send": 1, "received_count": 1}')
-    cur_dict = json.loads('{"walk_attempt": 3, "total_down": 108232, "success_count": 6, "total_up": 55585, "communities": {"bd152ce23576a515085268c671351ef37e796856" :{"global_time": 4, "sync_bloom_reuse": 0, "sync_bloom_skip": 0, "nr_stumbled_candidates": 0, "sync_bloom_new": 1, "sync_bloom_send": 1, "classification": "PoliSocialCommunity", "cid": "bd152ce23576a515085268c671351ef37e796856", "nr_candidates": 0}}, "total_send": 30, "received_count": 6}')
-
-    dc.print_on_change('test', prev_dict, cur_dict)
