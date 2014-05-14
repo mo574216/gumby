@@ -4,9 +4,9 @@
 # Filename: experiment_client.py
 # Description:
 # Author: Elric Milon
-# Maintainer:
+# Contributor: Seyedakbar Mostafavi
 # Created: Mon Sep  9 11:20:41 2013 (+0200)
-
+# Updated: Tue May 13 2014
 # Commentary:
 #
 #
@@ -44,9 +44,13 @@ from gumby.sync import ExperimentClient, ExperimentClientFactory
 from gumby.log import setupLogging
 from twisted.internet import reactor
 from twisted.python.log import msg, err, startLogging
+from gumby.scenario import ScenarioRunner
 
 class DummyExperimentClient(ExperimentClient):
     def startExperiment(self):
+        scenario_file_path = './'
+        self.scenario_file = 'dummy.scenario'
+        self.scenario_runner = ScenarioRunner(scenario_file_path)
         msg("Starting dummy experiment (exiting in a couple of seconds)")
         msg("in-experiment DEFAULT_LEVEL")
         err("in-experiment ERROR_LEVEL")
@@ -57,6 +61,8 @@ def main():
     factory = ExperimentClientFactory({"random_key": "random value"}, DummyExperimentClient)
     msg("Connecting to: %s:%s" % (environ['SYNC_HOST'], int(environ['SYNC_PORT'])))
     reactor.connectTCP(environ['SYNC_HOST'], int(environ['SYNC_PORT']), factory)
+    
+    #Add scnenario file - seyed
 
     reactor.exitCode = 0
     reactor.run()
