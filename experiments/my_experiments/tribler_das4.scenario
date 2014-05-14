@@ -1,0 +1,4 @@
+@0:0 start_tribler
+@0:1 online {1-10}
+@0:120 stop_tribler
+@0:150 stop
