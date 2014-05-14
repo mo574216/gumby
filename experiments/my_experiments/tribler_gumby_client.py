@@ -50,55 +50,17 @@ from gumby.log import setupLogging
 
 from twisted.python.log import msg, err
 
-# TODO(emilon): Make sure that the automatically chosen one is not this one in case we can avoid this.
 # The reactor needs to be imported after the dispersy client, as it is installing an EPOLL based one.
 from twisted.internet import reactor
 from twisted.internet.threads import deferToThread
 import base64
 from traceback import print_exc
 
-def register_or_call(callback, func, args=(), kargs={}):
-    if not callback.is_current_thread:
-        callback.register(func, args, kargs)
-    else:
-        func(*args, **kargs)
-
-def call_on_dispersy_thread(func):
-    def helper(*args, **kargs):
-        register_or_call(args[0]._dispersy.callback, func, args, kargs)
-
-    helper.__name__ = func.__name__
-    return helper
-
-def buffer_online(func):
-    def helper(*args, **kargs):
-        def buffer_call():
-            args[0].buffer_call(func, args, kargs)
-
-        register_or_call(args[0]._dispersy.callback, buffer_call)
-
-    helper.__name__ = func.__name__
-    return helper
-
-class DispersyExperimentScriptClient(ExperimentClient):
+class TriblerExperimentScriptClient(ExperimentClient):
     scenario_file = None
 
     def __init__(self, vars):
         ExperimentClient.__init__(self, vars)
-        self._dispersy = None
-        self._community = None
-        self._database_file = u"dispersy.db"
-        self._dispersy_exit_status = None
-        self._is_joined = False
-        self._strict = True
-        self.community_args = []
-        self.community_kwargs = {}
-        self._stats_file = None
-        self._online_buffer = []
-
-        self._crypto = self.initializeCrypto()
-        self.generateMyMember()
-        self.vars['private_keypair'] = base64.encodestring(self.my_member_private_key)
 
     def onVarsSend(self):
         scenario_file_path = path.join(environ['EXPERIMENT_DIR'], self.scenario_file)
@@ -110,24 +72,6 @@ class DispersyExperimentScriptClient(ExperimentClient):
 
     def onIdReceived(self):
         self.scenario_runner.set_peernumber(int(self.my_id))
-        # TODO(emilon): Auto-register this stuff
-        self.scenario_runner.register(self.echo)
-        self.scenario_runner.register(self.online)
-        self.scenario_runner.register(self.offline)
-        self.scenario_runner.register(self.churn)
-        self.scenario_runner.register(self.churn, 'churn_pattern')
-        self.scenario_runner.register(self.set_community_kwarg)
-        self.scenario_runner.register(self.set_database_file)
-        self.scenario_runner.register(self.use_memory_database)
-        self.scenario_runner.register(self.set_ignore_exceptions)
-        self.scenario_runner.register(self.start_dispersy)
-        self.scenario_runner.register(self.stop_dispersy)
-        self.scenario_runner.register(self.stop)
-        self.scenario_runner.register(self.set_master_member)
-        self.scenario_runner.register(self.reset_dispersy_statistics, 'reset_dispersy_statistics')
-        self.scenario_runner.register(self.annotate)
-        self.scenario_runner.register(self.peertype)
-
         self.registerCallbacks()
 
         t1 = time()
@@ -135,10 +79,8 @@ class DispersyExperimentScriptClient(ExperimentClient):
         msg('Took %.2f to parse scenario file' % (time() - t1))
 
     def startExperiment(self):
-        msg("Starting dispersy scenario experiment")
+        msg("Starting tribler scenario experiment")
 
-        # TODO(emilon): Move this to the right place
-        # TODO(emilon): Do we want to have the .dbs in the output dirs or should they be dumped to /tmp?
         my_dir = path.join(environ['OUTPUT_DIR'], self.my_id)
         makedirs(my_dir)
         chdir(my_dir)
@@ -158,168 +100,6 @@ class DispersyExperimentScriptClient(ExperimentClient):
     def echo(self, *argv):
         msg("%s ECHO" % self.my_id, ' '.join(argv))
 
-    def set_community_args(self, args):
-        """
-        Example: '1292333014,12923340000'
-        """
-        self.community_args = args.split(',')
-
-    def set_community_kwargs(self, kwargs):
-        """
-        Example: 'startingtimestamp=1292333014,endingtimestamp=12923340000'
-        """
-        for karg in kwargs.split(","):
-            if "=" in karg:
-                key, value = karg.split("=", 1)
-                self.community_kwargs[key.strip()] = value.strip()
-
-    def set_community_kwarg(self, key, value):
-        self.community_kwargs[key] = value
-
-    def set_database_file(self, filename):
-        self._database_file = unicode(filename)
-
-    def use_memory_database(self):
-        self._database_file = u':memory:'
-
-    def set_ignore_exceptions(self, boolean):
-        self._strict = not self.str2bool(boolean)
-
-    def start_dispersy(self):
-        msg("Starting dispersy")
-        # We need to import the stuff _AFTER_ configuring the logging stuff.
-        from Tribler.dispersy.callback import Callback
-        from Tribler.dispersy.dispersy import Dispersy
-        from Tribler.dispersy.endpoint import StandaloneEndpoint
-
-        self._dispersy = Dispersy(Callback("Dispersy"), StandaloneEndpoint(int(self.my_id) + 12000, '0.0.0.0'), u'.', self._database_file, self._crypto)
-        self._dispersy.statistics.enable_debug_statistics(True)
-
-        self.original_on_incoming_packets = self._dispersy.on_incoming_packets
-
-        if self._strict:
-            def exception_handler(exception, fatal):
-                msg("An exception occurred. Quitting because we are running with --strict enabled.")
-                print >> stderr, "Exception was:"
-
-                try:
-                    raise exception
-                except:
-                    from traceback import print_exc
-                    print_exc()
-
-                # Set Dispersy's exit status to error
-                self._dispersy_exit_status = 1
-                # Stop the experiment
-                reactor.callLater(1, self.stop)
-
-                return True
-            self._dispersy.callback.attach_exception_handler(exception_handler)
-
-        self._dispersy.start()
-
-        if self.master_private_key:
-            self._master_member = self._dispersy.callback.call(self._dispersy.get_member, kargs={'private_key': self.master_private_key})
-        else:
-            self._master_member = self._dispersy.callback.call(self._dispersy.get_member, kargs={'public_key': self.master_key})
-        self._my_member = self._dispersy.callback.call(self._dispersy.get_member, kargs={'private_key': self.my_member_private_key})
-        assert self._master_member
-        assert self._my_member
-
-        self._dispersy.callback.register(self._do_log)
-
-        self.print_on_change('community-kwargs', {}, self.community_kwargs)
-        self.print_on_change('community-env', {}, {'pid':getpid()})
-
-        msg("Finished starting dispersy")
-
-    def stop_dispersy(self):
-        def onDispersyStopped(result):
-            self._dispersy_exit_status = result
-
-        d = deferToThread(self._dispersy.stop)
-        d.addCallback(onDispersyStopped)
-
-    def stop(self, retry=3):
-        retry = int(retry)
-        if self._dispersy_exit_status is None and retry:
-            reactor.callLater(1, self.stop, retry - 1)
-        else:
-            msg("Dispersy exit status was:", self._dispersy_exit_status)
-            reactor.callLater(0, reactor.stop)
-
-    def set_master_member(self, pub_key, priv_key=''):
-        self.master_key = pub_key.decode("HEX")
-        self.master_private_key = priv_key.decode("HEX")
-
-    @call_on_dispersy_thread
-    def online(self, dont_empty=False):
-        msg("Trying to go online")
-        if self._community is None:
-            msg("online")
-
-            msg("join community %s as %s" % (self._master_member.mid.encode("HEX"), self._my_member.mid.encode("HEX")))
-            self._dispersy.on_incoming_packets = self.original_on_incoming_packets
-            self._community = self.community_class(self._dispersy, self._master_member, self._my_member, *self.community_args, **self.community_kwargs)
-            self._community.auto_load = False
-
-            assert self.is_online()
-            if not dont_empty:
-                self.empty_buffer()
-        else:
-            msg("online (we are already online)")
-
-    @call_on_dispersy_thread
-    def offline(self):
-        msg("Trying to go offline")
-
-        if self._community is None and self._is_joined:
-            msg("offline (we are already offline)")
-
-        else:
-            msg("offline")
-            for community in self._dispersy.get_communities():
-                community.unload_community()
-
-            self._community = None
-            self._dispersy.on_incoming_packets = lambda *params: None
-
-        if self._database_file == u':memory:':
-            msg("Be careful with memory databases and nodes going offline, you could be losing database because we're closing databases.")
-
-    def is_online(self):
-        return self._community != None
-
-    def churn(self, *args):
-        self.print_on_change('community-churn', {}, {'args':args})
-
-    def buffer_call(self, func, args, kargs):
-        if len(self._online_buffer) == 0 and self.is_online():
-            func(*args, **kargs)
-        else:
-            self._online_buffer.append((func, args, kargs))
-
-    def empty_buffer(self):
-        assert self.is_online()
-
-        # perform all tasks which were scheduled while we were offline
-        for func, args, kargs in self._online_buffer:
-            try:
-                func(*args, **kargs)
-            except:
-                print_exc()
-
-        self._online_buffer = []
-
-    @call_on_dispersy_thread
-    def reset_dispersy_statistics(self):
-        self._dispersy._statistics.reset()
-
-    def annotate(self, message):
-        self._stats_file.write('%.1f %s %s %s\n' % (time(), self.my_id, "annotate", message))
-    def peertype(self, peertype):
-        self._stats_file.write('%.1f %s %s %s\n' % (time(), self.my_id, "peertype", peertype))
-
     #
     # Aux. functions
     #
@@ -334,42 +114,6 @@ class DispersyExperimentScriptClient(ExperimentClient):
         if len(v) > 1 and v[1] == ".":
             return float(v)
         return int(v)
-
-    def print_on_change(self, name, prev_dict, cur_dict):
-        def get_changed_values(prev_dict, cur_dict):
-            new_values = {}
-            changed_values = {}
-            if cur_dict:
-                for key, value in cur_dict.iteritems():
-                    # convert key to make it printable
-                    if not isinstance(key, (basestring, int, long, float)):
-                        key = str(key)
-
-                    # if this is a dict, recursively check for changed values
-                    if isinstance(value, dict):
-                        converted_dict, changed_in_dict = get_changed_values(prev_dict.get(key, {}), value)
-
-                        new_values[key] = converted_dict
-                        if changed_in_dict:
-                            changed_values[key] = changed_in_dict
-
-                    # else convert and compare single value
-                    else:
-                        if not isinstance(value, (basestring, int, long, float, Iterable)):
-                            value = str(value)
-
-                        new_values[key] = value
-                        if prev_dict.get(key, None) != value:
-                            changed_values[key] = value
-
-            return new_values, changed_values
-
-        new_values, changed_values = get_changed_values(prev_dict, cur_dict)
-        if changed_values:
-            self._stats_file.write('%.1f %s %s %s\n' % (time(), self.my_id, name, json.dumps(changed_values)))
-            self._stats_file.flush()
-            return new_values
-        return prev_dict
 
     def _do_log(self):
         from Tribler.dispersy.candidate import CANDIDATE_STUMBLE_LIFETIME, CANDIDATE_WALK_LIFETIME, CANDIDATE_INTRO_LIFETIME
@@ -495,5 +239,5 @@ def main(client_class):
 
 if __name__ == '__main__':
     import sys
-    dc = DispersyExperimentScriptClient({})
+    dc = TriblerExperimentScriptClient({})
     dc._stats_file = sys.stderr
