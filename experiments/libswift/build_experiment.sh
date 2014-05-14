@@ -14,11 +14,16 @@ mkdir -p $OUTPUT_DIR/src
 mkdir -p $OUTPUT_DIR/dst
 
 # kill previous bridge
+<<<<<<< HEAD
 interface="/sys/class/net/"$BRIDGE_NAME
 if [ -d $interface ]; then
     sudo /sbin/ifconfig $BRIDGE_NAME down 2>/dev/null 
     sudo /sbin/brctl delbr $BRIDGE_NAME 2>/dev/null
 fi
+=======
+sudo /sbin/ifconfig $BRIDGE_NAME down
+sudo /sbin/brctl delbr $BRIDGE_NAME
+>>>>>>> 45fa43c6f44e6606374ff412fde917ab85390ba4
 
 # setup networking bridge
 sudo /sbin/brctl addbr $BRIDGE_NAME
