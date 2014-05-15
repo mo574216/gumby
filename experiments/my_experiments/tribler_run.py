@@ -45,13 +45,16 @@ import os
 os.chdir(os.path.abspath('./tribler'))
 sys.path.append('.')
 
-from Tribler.Test.test_as_server import TestAsServer
+from Tribler.Test.test_as_server import TestGuiAsServer
 
-class TestServerGeneral(TestAsServer):
-    #do something
-
+class TestServerGeneral(TestGuiAsServer):
+    	def do_something():
+		self.Call(100,quit)
+	self.startTest(do_something)
+	
 if __name__ == "__main__":
-    #do otherthing
-
+   	 #instantiate and call functions
+	TestInstance = TestServerGeneral()
+	TestInstance.startTest()
 #
 # tribler_run.py ends here
