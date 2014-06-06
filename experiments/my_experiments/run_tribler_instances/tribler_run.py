@@ -59,7 +59,7 @@ class TestServerGeneral(TestGuiAsServer):
 
     def test_tribler(self):
         """call function to run tribler """
-        self.startTest(call_tribler)
+        self.call_tribler()
 
 if __name__ == "__main__":
     # instantiate and call functions
