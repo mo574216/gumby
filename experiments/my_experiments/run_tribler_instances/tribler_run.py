@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # tribler_run.py ---
 #
-# Filename: test_30m_run.py
+# Filename: tribler_run.py
 # Description:
 # Author: Seyedakbar Mostafavi
 # Maintainer:
