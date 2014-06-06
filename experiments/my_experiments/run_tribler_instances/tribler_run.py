@@ -45,14 +45,25 @@ sys.path.append('.')
 
 from Tribler.Test.test_as_server import TestGuiAsServer
 
+
 class TestServerGeneral(TestGuiAsServer):
-    	def do_something():
-		self.Call(100,quit)
-	self.startTest(do_something)
-	
+    """Run Tribler for 100 seconds """
+
+    def __init__(self):
+        """ empty constructor """
+        pass
+
+    def call_tribler(self):
+        """call Tribler """
+        self.Call(100, self.quit())
+
+    def test_tribler(self):
+        """call function to run tribler """
+        self.startTest(call_tribler)
+
 if __name__ == "__main__":
-   	 #instantiate and call functions
-	TestInstance = TestServerGeneral()
-	TestInstance.startTest()
-#
+    # instantiate and call functions
+    T1 = TestServerGeneral()
+    T1.test_tribler()
+
 # tribler_run.py ends here

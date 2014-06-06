@@ -105,7 +105,7 @@ class TriblerExperimentScriptClient(ExperimentClient):
     def online(self)
 	msg("online")
 
-    def stop_tribler(selft)
+    def stop_tribler(self)
 	msg("offline")
 
     def stop(self)
