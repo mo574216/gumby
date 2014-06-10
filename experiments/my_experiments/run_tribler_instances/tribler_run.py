@@ -52,17 +52,16 @@ class TestServerGeneral(TestGuiAsServer):
     def __init__(self):
         """ empty constructor """
         pass
-
-    def call_tribler(self):
-        """call Tribler """
-        if "TRIBLER_EXECUTION_TIME" in os.environ:
-            run_time = "TRIBLER_EXECUTION_TIME"
-        else:
-            run_time = 60*4
-        self.Call(run_time, self.quit())
-
+    
     def test_tribler(self):
         """call function to run tribler """
+        def call_tribler(self):
+            """call Tribler """
+            if "TRIBLER_EXECUTION_TIME" in os.environ:
+                run_time = "TRIBLER_EXECUTION_TIME"
+            else:
+                run_time = 60*4
+            self.Call(run_time, self.quit())
         self.startTest(call_tribler)
 
 if __name__ == "__main__":
