@@ -47,12 +47,13 @@ from Tribler.Test.test_as_server import TestGuiAsServer
 
 
 class TestServerGeneral(TestGuiAsServer):
+
     """Run Tribler for 100 seconds """
 
     def __init__(self):
         """ empty constructor """
         pass
-    
+
     def test_tribler(self):
         """call function to run tribler """
         def call_tribler():
@@ -60,13 +61,13 @@ class TestServerGeneral(TestGuiAsServer):
             if "TRIBLER_EXECUTION_TIME" in os.environ:
                 run_time = "TRIBLER_EXECUTION_TIME"
             else:
-                run_time = 60*4
+                run_time = 60 * 4
             self.Call(run_time, self.quit())
         self.startTest(call_tribler)
 
 if __name__ == "__main__":
     # instantiate and call functions
-    t1 = TestServerGeneral()
-    t1.test_tribler()
+    tribler_instance = TestServerGeneral()
+    tribler_instance.test_tribler()
 
 # tribler_run.py ends here
