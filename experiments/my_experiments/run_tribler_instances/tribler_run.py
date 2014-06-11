@@ -55,7 +55,7 @@ class TestServerGeneral(TestGuiAsServer):
     
     def test_tribler(self):
         """call function to run tribler """
-        def call_tribler(self):
+        def call_tribler():
             """call Tribler """
             if "TRIBLER_EXECUTION_TIME" in os.environ:
                 run_time = "TRIBLER_EXECUTION_TIME"
