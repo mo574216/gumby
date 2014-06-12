@@ -49,6 +49,7 @@ from Tribler.Test.test_as_server import TestGuiAsServer
 class TestServerGeneral(TestGuiAsServer):
 
     """Run Tribler for 100 seconds """
+
     def test_tribler(self):
         """call function to run tribler """
         def call_tribler():
