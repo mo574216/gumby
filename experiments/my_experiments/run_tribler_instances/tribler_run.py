@@ -63,7 +63,6 @@ class TestServerGeneral(TestGuiAsServer):
 
 if __name__ == "__main__":
     # instantiate and call functions
-    tribler_instance = TestServerGeneral()
-    tribler_instance.test_tribler()
+    unittest.main()
 
 # tribler_run.py ends here
