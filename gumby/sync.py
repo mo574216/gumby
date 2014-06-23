@@ -414,10 +414,7 @@ class ExperimentClient(LineReceiver):
 
 class ExperimentClientFactory(ReconnectingClientFactory):
     maxDelay = 10
-<<<<<<< HEAD
 
-=======
->>>>>>> 45fa43c6f44e6606374ff412fde917ab85390ba4
     def __init__(self, vars, protocol=ExperimentClient):
         self.vars = vars
         self.protocol = protocol
