@@ -98,17 +98,17 @@ class TriblerExperimentScriptClient(ExperimentClient):
 
     def registerCallbacks(self):
         pass
-    def start_tribler()
+    def start_tribler():
 	msg("Starting tribler")
 	from Tribler.Main.tribler.py import run
 	
-    def online(self)
+    def online(self):
 	msg("online")
 
-    def stop_tribler(self)
+    def stop_tribler(self):
 	msg("offline")
 
-    def stop(self)
+    def stop(self):
 	msg("stop experiment")
 
 
